@@ -389,6 +389,24 @@ export default function InvoiceGenerator() {
         }
 
         pdf.save(`Invoice-${formData.invoiceNumber}.pdf`);
+
+        // Log to Google Sheets
+        try {
+          await fetch('https://script.google.com/macros/s/AKfycbzZNxHXUwS3WcU-TSDBNYZMUpuUa8S2qXUs5Dle2ths9f68PrgMLpZF1-f7tpUSI00/exec', {
+            method: 'POST',
+            body: JSON.stringify({
+              invoiceNumber: formData.invoiceNumber,
+              clientName: formData.clientName,
+              tripDestination: formData.tripDestination,
+              totalPackagePrice: formData.totalPackagePrice,
+              balance: calculateBalance(),
+              tripStatus: formData.tripStatus,
+              numberOfMembers: formData.numberOfMembers,
+            }),
+          });
+        } catch (logError) {
+          console.warn('Sheet logging failed (non-critical):', logError);
+        }
       }
 
     } catch (error) {
