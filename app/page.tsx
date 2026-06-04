@@ -80,28 +80,22 @@ export default function InvoiceGenerator() {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(true);
   const [formData, setFormData] = useState<InvoiceData>({
-    invoiceNumber: 'ADN2026-024',
-    invoiceDate: '2026-05-18',
-    tripDestination: 'Vagamon',
-    tripStatus: 'Completed',
-    clientName: 'Giri',
-    mobileNumber: '+91 82200 40106',
-    address: '24, Meenatchiaman Koil Street, Thondamanatham, Puducherry - 605502',
-    packageDestination: 'Vagamon',
-    packageStartDate: '2026-05-17',
-    packageEndDate: '2026-05-18',
-    numberOfMembers: 4,
-    totalPackagePrice: 13500,
-    advancePaid: 4000,
-    advancePaidDate: '2026-05-16',
-    discount: 500,
-    payments: [
-      {
-        id: '1',
-        amount: 9000,
-        date: '2026-05-17',
-      },
-    ],
+    invoiceNumber: '',
+    invoiceDate: '',
+    tripDestination: '',
+    tripStatus: 'Upcoming',
+    clientName: '',
+    mobileNumber: '',
+    address: '',
+    packageDestination: '',
+    packageStartDate: '',
+    packageEndDate: '',
+    numberOfMembers: 0,
+    totalPackagePrice: 0,
+    advancePaid: 0,
+    advancePaidDate: '',
+    discount: 0,
+    payments: [],
     notes: '• Includes all meals and accommodations\n• Travel is inclusive of transportation\n• Please carry valid ID proof',
   });
 
@@ -201,7 +195,7 @@ export default function InvoiceGenerator() {
         <body>
           <div class="header">
             <div style="display:flex; align-items:center; gap:24px; padding-bottom:16px; margin-bottom:24px;">
-              <img src="/logo.png" alt="Logo"
+              <img src="/placeholder-logo.png" alt="Logo"
                 style="width:80px; height:80px; object-fit:contain; border-radius:8px; flex-shrink:0;"
                 onerror="this.style.display='none'" />
               <div style="flex:1; text-align:center;">
@@ -369,23 +363,19 @@ export default function InvoiceGenerator() {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const imgWidth = 210;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const pageHeight = 297;
 
-        if (imgHeight > 297 * 10) {
-          // Handle multi-page PDFs
-          let heightLeft = imgHeight;
-          let position = 0;
+        let heightLeft = imgHeight;
+        let position = 0;
 
-          while (heightLeft >= 0) {
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= 297;
-            position -= 297;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
 
-            if (heightLeft > 0) {
-              pdf.addPage();
-            }
-          }
-        } else {
-          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        while (heightLeft > 0) {
+          position -= pageHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
         }
 
         pdf.save(`Invoice-${formData.invoiceNumber}.pdf`);
@@ -394,6 +384,7 @@ export default function InvoiceGenerator() {
         try {
           await fetch('https://script.google.com/macros/s/AKfycbzZNxHXUwS3WcU-TSDBNYZMUpuUa8S2qXUs5Dle2ths9f68PrgMLpZF1-f7tpUSI00/exec', {
             method: 'POST',
+            mode: 'no-cors',
             body: JSON.stringify({
               invoiceNumber: formData.invoiceNumber,
               clientName: formData.clientName,
