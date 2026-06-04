@@ -96,7 +96,7 @@ export default function InvoiceGenerator() {
     advancePaidDate: '',
     discount: 0,
     payments: [],
-    notes: '• Includes all meals and accommodations\n• Travel is inclusive of transportation\n• Please carry valid ID proof',
+    notes: 'Includes all meals and accommodations\nTravel is inclusive of transportation\nPlease carry valid ID proof',
   });
 
   const handleInputChange = (
@@ -157,247 +157,327 @@ export default function InvoiceGenerator() {
   };
 
   const downloadPDF = async () => {
-    if (!invoiceRef.current) return;
-
     try {
-      // Build plain HTML content with only basic styles
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Georgia, serif; color: #000; background: #fff; padding: 32px; }
-            h1 { font-size: 28px; font-weight: bold; margin: 0; }
-            h3 { font-weight: bold; color: #000; margin: 0 0 8px 0; }
-            p { margin: 0; }
-            table { width: 100%; border-collapse: collapse; font-size: 13px; }
-            td { border: 1px solid #ccc; padding: 8px; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 16px; margin-bottom: 24px; }
-            .subtitle { font-size: 16px; margin: 8px 0 0 0; }
-            .section { margin-bottom: 24px; border-bottom: 1px solid #ccc; padding-bottom: 16px; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; font-size: 14px; }
-            .grid-right { text-align: right; }
-            .label { color: #666; margin: 0; }
-            .value { font-weight: bold; color: #000; margin: 0; }
-            .bg-header { background-color: #f5f5f5; font-weight: bold; }
-            .bg-total { background-color: #e6f2ff; }
-            .text-red { color: #cc0000; font-weight: bold; }
-            .text-blue { color: #0066cc; font-weight: bold; }
-            .signature { text-align: right; margin-bottom: 32px; }
-            .sig-line { margin: 0 0 32px 0; border-top: 1px solid #000; padding-top: 8px; display: inline-block; width: 150px; }
-            .footer { text-align: center; font-weight: bold; color: #000; margin-top: 32px; }
-            ul { margin: 0; padding-left: 20px; font-size: 13px; }
-            li { margin: 4px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div style="display:flex; align-items:center; gap:24px; padding-bottom:16px; margin-bottom:24px;">
-              <img src="/placeholder-logo.png" alt="Logo"
-                style="width:80px; height:80px; object-fit:contain; border-radius:8px; flex-shrink:0;"
-                onerror="this.style.display='none'" />
-              <div style="flex:1; text-align:center;">
-                <h1 style="font-size:28px; font-weight:bold; letter-spacing:0.04em; margin:0;">ADN ADVENTURES</h1>
-                <p style="font-size:18px; letter-spacing:0.06em; color:#555; margin:4px 0 0 0;">TOURS & TRAVELS</p>
-                <p style="font-size:13px; color:#888; margin:6px 0 0 0;">Travel Invoice / Payment Receipt</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <div class="grid">
-              <div>
-                <p class="label">Invoice No</p>
-                <p class="value">${formData.invoiceNumber}</p>
-              </div>
-              <div class="grid-right">
-                <p class="label">Invoice Date</p>
-                <p class="value">${formatDate(formData.invoiceDate)}</p>
-              </div>
-            </div>
-            <div class="grid">
-              <div>
-                <p class="label">Trip Destination</p>
-                <p class="value">${formData.tripDestination}</p>
-              </div>
-              <div class="grid-right">
-                <p class="label">Trip Status</p>
-                <p class="value">${formData.tripStatus}</p>
-              </div>
-            </div>
-          </div>
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 15;
+      const contentW = pageW - margin * 2;
+      let y = margin;
 
-          <div class="section">
-            <h3>Client Details</h3>
-            <p style="font-size: 14px; color: #000; margin: 4px 0;"><span style="font-weight: bold;">Name:</span> ${formData.clientName}</p>
-            <p style="font-size: 14px; color: #000; margin: 4px 0;"><span style="font-weight: bold;">Mobile:</span> ${formData.mobileNumber}</p>
-            <p style="font-size: 14px; color: #000; margin: 4px 0;"><span style="font-weight: bold;">Address:</span> ${formData.address}</p>
-          </div>
+      // ── helpers ──────────────────────────────────────────────────
+      const checkNewPage = (needed: number) => {
+        if (y + needed > pageH - 20) {
+          pdf.addPage();
+          y = margin;
+        }
+      };
 
-          <div class="section">
-            <h3>Package Details</h3>
-            <table>
-              <tr>
-                <td class="bg-header">Package Destination</td>
-                <td>${formData.packageDestination}</td>
-              </tr>
-              <tr>
-                <td class="bg-header">Package Date</td>
-                <td>${formatDate(formData.packageStartDate)} to ${formatDate(formData.packageEndDate)}</td>
-              </tr>
-              <tr>
-                <td class="bg-header">Number of Members</td>
-                <td>${formData.numberOfMembers} Members</td>
-              </tr>
-              <tr>
-                <td class="bg-header">Total Package Price</td>
-                <td>₹${formData.totalPackagePrice.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td class="bg-header">Advance Paid</td>
-                <td>₹${formData.advancePaid.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td class="bg-header">Advance Paid Date</td>
-                <td>${formatDate(formData.advancePaidDate)}</td>
-              </tr>
-              ${formData.payments.map((payment, index) => `
-                <tr>
-                  <td class="bg-header">Payment ${index + 1}</td>
-                  <td>₹${parseFloat(String(payment.amount)).toLocaleString()} (${formatDate(payment.date)})</td>
-                </tr>
-              `).join('')}
-              <tr>
-                <td class="bg-header">Discount</td>
-                <td>₹${formData.discount.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td class="bg-header">Remaining Balance</td>
-                <td class="text-red">₹${calculateBalance().toLocaleString()}</td>
-              </tr>
-            </table>
-          </div>
+      const sectionLine = () => {
+        checkNewPage(6);
+        pdf.setDrawColor(180);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, y, pageW - margin, y);
+        y += 5;
+      };
 
-          <div class="section">
-            <h3>Payment Summary</h3>
-            <table>
-              <tr>
-                <td class="bg-header">Total Package Amount</td>
-                <td style="text-align: right;">₹${formData.totalPackagePrice.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td class="bg-header">Discount Applied</td>
-                <td style="text-align: right;">- ₹${formData.discount.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td class="bg-header">Advance Payment Received</td>
-                <td style="text-align: right;">₹${formData.advancePaid.toLocaleString()}</td>
-              </tr>
-              ${formData.payments.map((payment, index) => `
-                <tr>
-                  <td class="bg-header">Payment ${index + 1} Received</td>
-                  <td style="text-align: right;">₹${parseFloat(String(payment.amount)).toLocaleString()}</td>
-                </tr>
-              `).join('')}
-              <tr class="bg-total">
-                <td style="font-weight: bold;">Total Amount Received</td>
-                <td style="text-align: right;" class="text-blue">₹${calculateTotalReceived().toLocaleString()}</td>
-              </tr>
-            </table>
-          </div>
+      const boldText = (text: string, x: number, yPos: number, size = 10) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(size);
+        pdf.text(text, x, yPos);
+      };
 
-          ${formData.notes ? `
-            <div class="section">
-              <h3>Notes</h3>
-              <ul>
-                ${formData.notes.split('\n').map(note => `<li>${note}</li>`).join('')}
-              </ul>
-            </div>
-          ` : ''}
+      const normalText = (text: string, x: number, yPos: number, size = 10) => {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(size);
+        pdf.text(text, x, yPos);
+      };
 
-          <div class="signature">
-            <p class="sig-line"></p>
-            <p style="font-weight: bold; color: #000; margin-top: 8px;">Authorized Signature</p>
-          </div>
-          <p class="footer">Thank You & Have a Great Journey Ahead!</p>
-        </body>
-        </html>
-      `;
+      const labelValue = (label: string, value: string, x: number, maxW: number) => {
+        checkNewPage(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(120);
+        pdf.text(label, x, y);
+        y += 4;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(10);
+        pdf.setTextColor(0);
+        pdf.text(value || '-', x, y, { maxWidth: maxW });
+        y += 6;
+      };
 
-      // Create an iframe to isolate rendering from page CSS
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '-9999px';
-      iframe.style.width = '210mm';
-      iframe.style.height = '297mm';
-      iframe.style.border = 'none';
-      document.body.appendChild(iframe);
+      const tableRow = (
+        label: string,
+        value: string,
+        isRed = false,
+        isBlue = false,
+        isBoldVal = false
+      ) => {
+        checkNewPage(10);
+        // row background
+        pdf.setFillColor(248, 248, 248);
+        pdf.rect(margin, y - 4, contentW * 0.55, 8, 'F');
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(margin + contentW * 0.55, y - 4, contentW * 0.45, 8, 'F');
+        // borders
+        pdf.setDrawColor(200);
+        pdf.setLineWidth(0.2);
+        pdf.rect(margin, y - 4, contentW, 8);
+        pdf.line(margin + contentW * 0.55, y - 4, margin + contentW * 0.55, y + 4);
+        // label
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(80);
+        pdf.text(label, margin + 2, y + 0.5);
+        // value
+        if (isRed) pdf.setTextColor(180, 0, 0);
+        else if (isBlue) pdf.setTextColor(0, 80, 180);
+        else pdf.setTextColor(0);
+        pdf.setFont('helvetica', isBoldVal ? 'bold' : 'normal');
+        pdf.setFontSize(9);
+        pdf.text(value, pageW - margin - 2, y + 0.5, { align: 'right' });
+        pdf.setTextColor(0);
+        y += 8;
+      };
 
-      // Write HTML to iframe
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (iframeDoc) {
-        iframeDoc.write(htmlContent);
-        iframeDoc.close();
+      const summaryRow = (
+        label: string,
+        value: string,
+        highlight = false,
+        isBlue = false
+      ) => {
+        checkNewPage(10);
+        if (highlight) {
+          pdf.setFillColor(230, 242, 255);
+          pdf.rect(margin, y - 4, contentW, 8, 'F');
+        } else {
+          pdf.setFillColor(248, 248, 248);
+          pdf.rect(margin, y - 4, contentW * 0.65, 8, 'F');
+        }
+        pdf.setDrawColor(200);
+        pdf.setLineWidth(0.2);
+        pdf.rect(margin, y - 4, contentW, 8);
+        pdf.line(margin + contentW * 0.65, y - 4, margin + contentW * 0.65, y + 4);
+        pdf.setFont('helvetica', highlight ? 'bold' : 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(highlight ? 0 : 80);
+        pdf.text(label, margin + 2, y + 0.5);
+        if (isBlue) pdf.setTextColor(0, 80, 180);
+        else pdf.setTextColor(0);
+        pdf.setFont('helvetica', highlight ? 'bold' : 'normal');
+        pdf.text(value, pageW - margin - 2, y + 0.5, { align: 'right' });
+        pdf.setTextColor(0);
+        y += 8;
+      };
 
-        // Wait for iframe content to render
-        await new Promise(resolve => setTimeout(resolve, 500));
+      // ── HEADER ───────────────────────────────────────────────────
+      // Try to load logo
+      try {
+        const logoRes = await fetch('/logo.jpeg');
+        if (logoRes.ok) {
+          const blob = await logoRes.blob();
+          const base64 = await new Promise<string>((res) => {
+            const reader = new FileReader();
+            reader.onload = () => res(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          pdf.addImage(base64, 'JPEG', margin, y, 20, 20);
+        }
+      } catch (_) { /* no logo, skip */ }
 
-        // Render iframe body to canvas
-        const canvas = await html2canvas(iframeDoc.body, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          allowTaint: true,
-          foreignObjectRendering: false,
+      // Company name centered
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(20);
+      pdf.setTextColor(0);
+      pdf.text('ADN ADVENTURES', pageW / 2, y + 7, { align: 'center' });
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+      pdf.setTextColor(80);
+      pdf.text('TOURS & TRAVELS', pageW / 2, y + 13, { align: 'center' });
+      pdf.setFontSize(8);
+      pdf.setTextColor(130);
+      pdf.text('Travel Invoice / Payment Receipt', pageW / 2, y + 18, { align: 'center' });
+      pdf.setTextColor(0);
+
+      y += 24;
+      pdf.setDrawColor(0);
+      pdf.setLineWidth(0.6);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 8;
+
+      // ── INVOICE META ─────────────────────────────────────────────
+      const col2 = margin + contentW / 2 + 5;
+      const colW = contentW / 2 - 5;
+
+      // Row 1
+      const ySnap = y;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(120);
+      pdf.text('Invoice No', margin, y);
+      pdf.text('Invoice Date', col2, y);
+      y += 4;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(0);
+      pdf.text(formData.invoiceNumber || '-', margin, y);
+      pdf.text(formatDate(formData.invoiceDate) || '-', col2, y);
+      y += 7;
+
+      // Row 2
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(120);
+      pdf.text('Trip Destination', margin, y);
+      pdf.text('Trip Status', col2, y);
+      y += 4;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(0);
+      pdf.text(formData.tripDestination || '-', margin, y);
+      pdf.text(formData.tripStatus || '-', col2, y);
+      y += 8;
+
+      sectionLine();
+
+      // ── CLIENT DETAILS ───────────────────────────────────────────
+      boldText('Client Details', margin, y, 11);
+      y += 6;
+
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold'); pdf.text('Name:', margin, y);
+      pdf.setFont('helvetica', 'normal'); pdf.text(formData.clientName || '-', margin + 14, y);
+      y += 5;
+      pdf.setFont('helvetica', 'bold'); pdf.text('Mobile:', margin, y);
+      pdf.setFont('helvetica', 'normal'); pdf.text(formData.mobileNumber || '-', margin + 14, y);
+      y += 5;
+      pdf.setFont('helvetica', 'bold'); pdf.text('Address:', margin, y);
+      pdf.setFont('helvetica', 'normal');
+      const addrLines = pdf.splitTextToSize(formData.address || '-', contentW - 20);
+      pdf.text(addrLines, margin + 18, y);
+      y += addrLines.length * 5;
+
+      sectionLine();
+
+      // ── PACKAGE DETAILS ──────────────────────────────────────────
+      checkNewPage(12);
+      boldText('Package Details', margin, y, 11);
+      y += 7;
+
+      tableRow('Package Destination', formData.packageDestination || '-');
+      tableRow('Package Date', `${formatDate(formData.packageStartDate)} to ${formatDate(formData.packageEndDate)}`);
+      tableRow('Number of Members', `${formData.numberOfMembers} Members`);
+      tableRow('Total Package Price', `Rs. ${formData.totalPackagePrice.toLocaleString()}`);
+      tableRow('Advance Paid', `Rs. ${formData.advancePaid.toLocaleString()}`);
+      tableRow('Advance Paid Date', formatDate(formData.advancePaidDate) || '-');
+      formData.payments.forEach((payment, index) => {
+        tableRow(
+          `Payment ${index + 1}`,
+          `Rs. ${parseFloat(String(payment.amount)).toLocaleString()} (${formatDate(payment.date)})`
+        );
+      });
+      tableRow('Discount', `Rs. ${formData.discount.toLocaleString()}`);
+      tableRow('Remaining Balance', `Rs. ${calculateBalance().toLocaleString()}`, true, false, true);
+
+      y += 4;
+      sectionLine();
+
+      // ── PAYMENT SUMMARY ──────────────────────────────────────────
+      checkNewPage(12);
+      boldText('Payment Summary', margin, y, 11);
+      y += 7;
+
+      summaryRow('Total Package Amount', `Rs. ${formData.totalPackagePrice.toLocaleString()}`);
+      summaryRow('Discount Applied', `- Rs. ${formData.discount.toLocaleString()}`);
+      summaryRow('Advance Payment Received', `Rs. ${formData.advancePaid.toLocaleString()}`);
+      formData.payments.forEach((payment, index) => {
+        summaryRow(
+          `Payment ${index + 1} Received`,
+          `Rs. ${parseFloat(String(payment.amount)).toLocaleString()}`
+        );
+      });
+      summaryRow('Total Amount Received', `Rs. ${calculateTotalReceived().toLocaleString()}`, true, true);
+
+      y += 4;
+      sectionLine();
+
+      // ── NOTES ────────────────────────────────────────────────────
+      if (formData.notes) {
+        checkNewPage(12);
+        boldText('Notes', margin, y, 11);
+        y += 6;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(60);
+        formData.notes.split('\n').forEach(line => {
+          checkNewPage(6);
+          const wrapped = pdf.splitTextToSize(`• ${line}`, contentW);
+          pdf.text(wrapped, margin, y);
+          y += wrapped.length * 5;
+        });
+        pdf.setTextColor(0);
+        y += 4;
+        sectionLine();
+      }
+
+      // ── SIGNATURE + FOOTER ───────────────────────────────────────
+      // Measure what we need: signature block (~30) + footer (~16)
+      const signatureFooterHeight = 50;
+      checkNewPage(signatureFooterHeight);
+
+      // Signature on the right
+      y += 6;
+      pdf.setDrawColor(0);
+      pdf.setLineWidth(0.3);
+      pdf.line(pageW - margin - 45, y, pageW - margin, y);
+      y += 5;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setTextColor(0);
+      pdf.text('Authorized Signature', pageW - margin, y, { align: 'right' });
+
+      // Footer pinned with a gap
+      y += 16;
+      pdf.setDrawColor(180);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 7;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(0);
+      pdf.text('Thank You & Have a Great Journey Ahead!', pageW / 2, y, { align: 'center' });
+
+      // ── SAVE ─────────────────────────────────────────────────────
+      // With this:
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        // iOS Safari: open blob URL in new tab — user can then tap Share → Save to Files
+        const blob = pdf.output('blob');
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+      } else {
+        pdf.save(`Invoice-${formData.invoiceNumber}.pdf`);
+      }
+
+      // Log to Google Sheets
+      try {
+        const params = new URLSearchParams({
+          invoiceNumber: formData.invoiceNumber,
+          clientName: formData.clientName,
+          tripDestination: formData.tripDestination,
+          totalPackagePrice: String(formData.totalPackagePrice),
+          balance: String(calculateBalance()),
+          tripStatus: formData.tripStatus,
+          numberOfMembers: String(formData.numberOfMembers),
         });
 
-        // Clean up
-        document.body.removeChild(iframe);
-
-        // Generate PDF from canvas
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        const pageHeight = 297;
-
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft > 0) {
-          position -= pageHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-
-        pdf.save(`Invoice-${formData.invoiceNumber}.pdf`);
-
-        // Log to Google Sheets
-        try {
-          await fetch('https://script.google.com/macros/s/AKfycbzZNxHXUwS3WcU-TSDBNYZMUpuUa8S2qXUs5Dle2ths9f68PrgMLpZF1-f7tpUSI00/exec', {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({
-              invoiceNumber: formData.invoiceNumber,
-              clientName: formData.clientName,
-              tripDestination: formData.tripDestination,
-              totalPackagePrice: formData.totalPackagePrice,
-              balance: calculateBalance(),
-              tripStatus: formData.tripStatus,
-              numberOfMembers: formData.numberOfMembers,
-            }),
-          });
-        } catch (logError) {
-          console.warn('Sheet logging failed (non-critical):', logError);
-        }
+        await fetch(
+          `https://script.google.com/macros/s/AKfycbzZNxHXUwS3WcU-TSDBNYZMUpuUa8S2qXUs5Dle2ths9f68PrgMLpZF1-f7tpUSI00/exec?${params.toString()}`,
+          { method: 'GET', mode: 'no-cors' }
+        );
+      } catch (logError) {
+        console.warn('Sheet logging failed (non-critical):', logError);
       }
 
     } catch (error) {
@@ -728,7 +808,7 @@ export default function InvoiceGenerator() {
             <div className="lg:sticky lg:top-8 lg:h-fit">
               <div
                 ref={invoiceRef}
-                className="invoice-container bg-white p-8 rounded-lg shadow-lg border border-slate-200 space-y-6"
+                className="invoice-container bg-white p-8 rounded-lg shadow-lg border border-slate-200 flex flex-col min-h-[297mm]"
                 style={{ fontFamily: 'Georgia, serif' }}
               >
                 {/* Header */}
@@ -747,7 +827,7 @@ export default function InvoiceGenerator() {
                     {/* Logo */}
                     <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-xl">
                       <img
-                        src="/logo.png"
+                        src="/logo.jpeg"
                         alt="ADN Adventures Logo"
                         className="w-full h-full object-contain rounded-xl"
                         onError={(e) => {
@@ -970,15 +1050,16 @@ export default function InvoiceGenerator() {
                 )}
 
                 {/* Footer */}
+                {/* Footer */}
                 <div className="space-y-6 pt-4">
                   <div className="text-right">
-                    <p className="text-sm text-slate-600 mb-8">
-                      ________________________
-                    </p>
-                    <p className="text-sm font-semibold text-slate-900">
-                      Authorized Signature
-                    </p>
+                    <p className="text-sm text-slate-600 mb-8">________________________</p>
+                    <p className="text-sm font-semibold text-slate-900">Authorized Signature</p>
                   </div>
+                </div>
+
+                {/* Sticky footer — outside the space-y-6 sections */}
+                <div className="mt-auto pt-8 border-t border-slate-200">
                   <p className="text-center text-sm font-semibold text-slate-900">
                     Thank You & Have a Great Journey Ahead!
                   </p>
