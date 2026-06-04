@@ -626,14 +626,34 @@ export default function InvoiceGenerator() {
               </div>
 
               <div className="space-y-4">
-                <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                  <p className="text-sm text-blue-800">
-                    <span className="font-semibold">Advance Paid:</span> ₹
-                    {formData.advancePaid.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-blue-600">
-                    Date: {formatDate(formData.advancePaidDate)}
-                  </p>
+                <div className="flex gap-3 items-end bg-blue-50 p-3 rounded border border-blue-200">
+                  <div className="flex-1">
+                    <Label className="text-xs font-semibold text-blue-800">
+                      Advance Paid (₹)
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="Amount"
+                      value={formData.advancePaid || ''}
+                      onChange={(e) =>
+                        handleInputChange('advancePaid', parseFloat(e.target.value) || 0)
+                      }
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs font-semibold text-blue-800">
+                      Date
+                    </Label>
+                    <Input
+                      type="date"
+                      value={formData.advancePaidDate}
+                      onChange={(e) =>
+                        handleInputChange('advancePaidDate', e.target.value)
+                      }
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
 
                 {formData.payments.map((payment, index) => (
