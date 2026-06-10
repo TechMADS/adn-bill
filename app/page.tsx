@@ -73,7 +73,7 @@ interface InvoiceData {
   advancePaidDate: string;
   discount: number;
   payments: Payment[];
-  notes: string;
+  termsConditions: string;
 }
 
 export default function InvoiceGenerator() {
@@ -81,6 +81,7 @@ export default function InvoiceGenerator() {
   const [showPreview, setShowPreview] = useState(true);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState('');
+  const [attachments, setAttachments] = useState<File[]>([]);
 
   const [formData, setFormData] = useState<InvoiceData>({
     invoiceNumber: '',
@@ -99,7 +100,39 @@ export default function InvoiceGenerator() {
     advancePaidDate: '',
     discount: 0,
     payments: [],
-    notes: 'Includes all meals and accommodations\nTravel is inclusive of transportation\nPlease carry valid ID proof',
+    termsConditions: `
+Payment Terms
+
+• 40% Advance payment must be made on or before booking confirmation.
+• Remaining amount to be paid on or before the travel date.
+
+Cancellation Policy
+
+• Cancellation made before 7 days of the journey date: 75% of the total package amount will be deducted.
+• Cancellation made before 3 days of the journey date: 100% of the total package amount will be deducted.
+• No refund will be provided for last-minute cancellations or no-shows.
+• Refunds, if applicable, will be processed within 7–10 working days.
+
+Terms and Conditions
+
+• The quotation is based on the details provided by the client and is valid only for the mentioned dates.
+• Guide charges must be paid; otherwise, guidance will be provided remotely.
+• Rates are applicable for group bookings; changes in participants may affect the cost.
+• Hotel check-in and check-out timings are subject to hotel policies.
+• Rooms will be provided on a sharing basis as per availability.
+• Sightseeing will be covered as per itinerary; sequence may change due to conditions.
+• The company is not responsible for delays due to natural or unforeseen circumstances.
+• Personal expenses are not included unless mentioned.
+• Clients must carry valid government-issued ID proof.
+• Any damages will be chargeable to the client.
+• Management reserves the right to modify the itinerary.
+
+Important Notes
+
+• Rates are calculated based on group size.
+• Changes in itinerary may affect the cost.
+• Entry tickets and personal expenses are not included.
+`,
   });
 
   const handleInputChange = (
@@ -442,14 +475,14 @@ export default function InvoiceGenerator() {
       sectionLine();
 
       // ── NOTES ────────────────────────────────────────────────────
-      if (formData.notes) {
+      if (formData.termsConditions) {
         checkNewPage(12);
         boldText('Notes', margin, y, 11);
         y += 6;
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(9);
         pdf.setTextColor(60);
-        formData.notes.split('\n').forEach(line => {
+        formData.termsConditions.split('\n').forEach(line => {
           checkNewPage(6);
           const wrapped = pdf.splitTextToSize(`• ${line}`, contentW);
           pdf.text(wrapped, margin, y);
@@ -486,6 +519,59 @@ export default function InvoiceGenerator() {
       pdf.setFontSize(10);
       pdf.setTextColor(0);
       pdf.text('Thank You & Have a Great Journey Ahead!', pageW / 2, y, { align: 'center' });
+
+
+      // Attach uploaded documents
+      for (const file of attachments) {
+
+        pdf.addPage();
+
+        if (file.type.startsWith("image/")) {
+
+          const imgData = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+
+            reader.onload = () =>
+              resolve(reader.result as string);
+
+            reader.readAsDataURL(file);
+          });
+
+
+          pdf.addImage(
+            imgData,
+            "JPEG",
+            10,
+            10,
+            190,
+            270
+          );
+
+        } else if (file.type === "application/pdf") {
+
+          const pdfBytes = await file.arrayBuffer();
+
+          const blobUrl =
+            URL.createObjectURL(
+              new Blob(
+                [pdfBytes],
+                { type: "application/pdf" }
+              )
+            );
+
+          pdf.text(
+            `Attached PDF: ${file.name}`,
+            20,
+            20
+          );
+
+          pdf.text(
+            blobUrl,
+            20,
+            30
+          );
+        }
+      }
 
       // ── SAVE ─────────────────────────────────────────────────────
       // With this:
@@ -803,12 +889,71 @@ export default function InvoiceGenerator() {
             </Card>
 
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">Notes</h2>
+
+              <h2 className="text-xl font-bold text-slate-900 mb-4">
+                Terms & Conditions
+              </h2>
+
               <Textarea
-                value={formData.notes}
-                onChange={(e) => handleInputChange('notes', e.target.value)}
-                rows={4}
+                value={formData.termsConditions}
+                onChange={(e) =>
+                  handleInputChange(
+                    'termsConditions',
+                    e.target.value
+                  )
+                }
+                rows={12}
               />
+
+            </Card>
+
+            <Card className="p-6">
+              <h2 className="text-xl font-bold text-slate-900 mb-4">
+                Attach Documents
+              </h2>
+
+              <Input
+                type="file"
+                multiple
+                accept="image/*,.pdf"
+                onChange={(e) => {
+                  if (e.target.files) {
+                    const newFiles = Array.from(e.target.files);
+
+                    setAttachments((prev) => [
+                      ...prev,
+                      ...newFiles
+                    ]);
+                  }
+
+                  // allow selecting same file again
+                  e.target.value = "";
+                }}
+              />
+
+              {attachments.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between bg-slate-100 p-2 rounded"
+                >
+
+                  <span>
+                    📎 {file.name}
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      setAttachments(prev =>
+                        prev.filter((_, i) => i !== index)
+                      )
+                    }}
+                    className="text-red-600"
+                  >
+                    Remove
+                  </button>
+
+                </div>
+              ))}
             </Card>
 
             <div className="flex flex-col gap-4">
@@ -1078,13 +1223,13 @@ export default function InvoiceGenerator() {
                   </table>
                 </div>
 
-                {/* Notes */}
-                {formData.notes && (
+                {/* Terms & Conditions */}
+                {formData.termsConditions && (
                   <div className="space-y-2 border-b border-slate-300 pb-4">
-                    <h3 className="font-bold text-slate-900">Notes</h3>
+                    <h3 className="font-bold text-slate-900">Terms & Conditions</h3>
                     <ul className="text-sm text-slate-700 space-y-1">
-                      {formData.notes.split('\n').map((note, index) => (
-                        <li key={index}>{note}</li>
+                      {formData.termsConditions.split('\n').map((term, index) => (
+                        <li key={index}>{term}</li>
                       ))}
                     </ul>
                   </div>
