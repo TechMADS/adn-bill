@@ -79,6 +79,9 @@ interface InvoiceData {
 export default function InvoiceGenerator() {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(true);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveError, setSaveError] = useState('');
+
   const [formData, setFormData] = useState<InvoiceData>({
     invoiceNumber: '',
     invoiceDate: '',
@@ -139,6 +142,42 @@ export default function InvoiceGenerator() {
       ...prev,
       payments: prev.payments.filter((p) => p.id !== id),
     }));
+  };
+
+  const logInvoiceToGoogleSheet = async () => {
+    const payload = {
+      ...formData,
+      balance: calculateBalance(),
+      totalReceived: calculateTotalReceived(),
+    };
+
+    const response = await fetch('/api/sheets', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Google Sheets save failed');
+    }
+
+    return true;
+  };
+
+  const saveFormDataToSheet = async () => {
+    setSaveState('saving');
+    setSaveError('');
+
+    try {
+      await logInvoiceToGoogleSheet();
+      setSaveState('saved');
+    } catch (error) {
+      setSaveState('error');
+      setSaveError(error instanceof Error ? error.message : 'Unknown error');
+    }
   };
 
   const calculateBalance = () => {
@@ -460,22 +499,9 @@ export default function InvoiceGenerator() {
         pdf.save(`Invoice-${formData.invoiceNumber}.pdf`);
       }
 
-      // Log to Google Sheets
+      // Save the full invoice data to Google Sheets behind the server webhook.
       try {
-        const params = new URLSearchParams({
-          invoiceNumber: formData.invoiceNumber,
-          clientName: formData.clientName,
-          tripDestination: formData.tripDestination,
-          totalPackagePrice: String(formData.totalPackagePrice),
-          balance: String(calculateBalance()),
-          tripStatus: formData.tripStatus,
-          numberOfMembers: String(formData.numberOfMembers),
-        });
-
-        await fetch(
-          `https://script.google.com/macros/s/AKfycbzZNxHXUwS3WcU-TSDBNYZMUpuUa8S2qXUs5Dle2ths9f68PrgMLpZF1-f7tpUSI00/exec?${params.toString()}`,
-          { method: 'GET', mode: 'no-cors' }
-        );
+        await logInvoiceToGoogleSheet();
       } catch (logError) {
         console.warn('Sheet logging failed (non-critical):', logError);
       }
@@ -785,14 +811,23 @@ export default function InvoiceGenerator() {
               />
             </Card>
 
-            <div className="flex gap-4">
-              <Button
-                onClick={() => setShowPreview(!showPreview)}
-                className="flex-1 bg-slate-800 hover:bg-slate-900"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                {showPreview ? 'Hide' : 'Show'} Preview
-              </Button>
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-4">
+                <Button
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="flex-1 bg-slate-800 hover:bg-slate-900"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  {showPreview ? 'Hide' : 'Show'} Preview
+                </Button>
+                <Button
+                  onClick={saveFormDataToSheet}
+                  disabled={saveState === 'saving'}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  {saveState === 'saving' ? 'Saving...' : 'Save to Google Sheets'}
+                </Button>
+              </div>
               <Button
                 onClick={downloadPDF}
                 className="flex-1 bg-green-600 hover:bg-green-700"
@@ -800,6 +835,12 @@ export default function InvoiceGenerator() {
                 <Download className="w-4 h-4 mr-2" />
                 Download PDF
               </Button>
+              {saveState === 'saved' && (
+                <p className="text-sm text-emerald-700">Form data saved to Google Sheets.</p>
+              )}
+              {saveState === 'error' && (
+                <p className="text-sm text-red-700">Unable to save to Sheets: {saveError}</p>
+              )}
             </div>
           </div>
 
