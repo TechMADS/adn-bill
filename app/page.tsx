@@ -474,17 +474,17 @@ Important Notes
       y += 4;
       sectionLine();
 
-      // ── NOTES ────────────────────────────────────────────────────
+      // ── TERMS & CONDITIONS ────────────────────────────────────────────
       if (formData.termsConditions) {
         checkNewPage(12);
-        boldText('Notes', margin, y, 11);
+        boldText('Terms & Conditions', margin, y, 11);
         y += 6;
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(9);
         pdf.setTextColor(60);
         formData.termsConditions.split('\n').forEach(line => {
           checkNewPage(6);
-          const wrapped = pdf.splitTextToSize(`• ${line}`, contentW);
+          const wrapped = pdf.splitTextToSize(`${line}`, contentW);
           pdf.text(wrapped, margin, y);
           y += wrapped.length * 5;
         });
