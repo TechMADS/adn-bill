@@ -13,19 +13,19 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/logo.jpeg',
+        url: 'https://adnadventures.com/logo/logo.jpeg',
         media: '(prefers-color-scheme: light)',
       },
       {
-        url: '/logo.jpeg',
+        url: 'https://adnadventures.com/logo/logo.jpeg',
         media: '(prefers-color-scheme: dark)',
       },
       {
-        url: '/logo.jpeg',
+        url: 'https://adnadventures.com/logo/logo.svg',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/logo.jpeg',
+    apple: 'https://adnadventures.com/logo/logo.jpeg',
   },
 }
 

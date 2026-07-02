@@ -346,7 +346,7 @@ Important Notes
       // ── HEADER ───────────────────────────────────────────────────
       // Try to load logo
       try {
-        const logoRes = await fetch('/logo.jpeg');
+        const logoRes = await fetch('https://adnadventures.com/logo/logo.jpeg');
         if (logoRes.ok) {
           const blob = await logoRes.blob();
           const base64 = await new Promise<string>((res) => {
@@ -1013,7 +1013,7 @@ Important Notes
                     {/* Logo */}
                     <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-xl">
                       <img
-                        src="/logo.jpeg"
+                        src="https://adnadventures.com/logo/logo.jpeg"
                         alt="ADN Adventures Logo"
                         className="w-full h-full object-contain rounded-xl"
                         onError={(e) => {
