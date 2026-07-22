@@ -1239,6 +1239,13 @@ Important Notes
                 {/* Footer */}
                 <div className="space-y-6 pt-4">
                   <div className="text-right">
+                    <div className="flex flex-col items-end mb-0">
+                      <img
+                        src="/signature.png"
+                        alt="Authorized Signature"
+                        className="h-40 md:h-40 w-auto mr-8 object-contain"
+                      />
+                    </div>
                     <p className="text-sm text-slate-600 mb-8">________________________</p>
                     <p className="text-sm font-semibold text-slate-900">Authorized Signature</p>
                   </div>
