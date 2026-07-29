@@ -498,16 +498,56 @@ Important Notes
       const signatureFooterHeight = 50;
       checkNewPage(signatureFooterHeight);
 
+      // // Signature on the right
+      // y += 6;
+      // pdf.setDrawColor(0);
+      // pdf.setLineWidth(0.3);
+      // pdf.line(pageW - margin - 45, y, pageW - margin, y);
+      // y += 5;
+      // pdf.setFont('helvetica', 'bold');
+      // pdf.setFontSize(9);
+      // pdf.setTextColor(0);
+      // pdf.text('Authorized Signature', pageW - margin, y, { align: 'right' });
+
       // Signature on the right
+      try {
+        const signRes = await fetch('/signature.png');
+
+        if (signRes.ok) {
+          const blob = await signRes.blob();
+
+          const signBase64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+
+          // Draw signature image
+          pdf.addImage(
+            signBase64,
+            'PNG',
+            pageW - margin - 40,
+            y - 20,
+            45,
+            45
+          );
+        }
+      } catch (e) {
+        console.log('Signature image not found');
+      }
+
       y += 6;
-      pdf.setDrawColor(0);
-      pdf.setLineWidth(0.3);
-      pdf.line(pageW - margin - 45, y, pageW - margin, y);
+
+      // Signature line
+      // pdf.line(pageW - margin - 45, y, pageW - margin, y);
+
       y += 5;
+
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(9);
-      pdf.setTextColor(0);
-      pdf.text('Authorized Signature', pageW - margin, y, { align: 'right' });
+      pdf.text('Authorized Signature', pageW - margin, y, {
+        align: 'right',
+      });
 
       // Footer pinned with a gap
       y += 16;
