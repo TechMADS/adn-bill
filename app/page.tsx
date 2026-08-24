@@ -346,7 +346,7 @@ Important Notes
       // ── HEADER ───────────────────────────────────────────────────
       // Try to load logo
       try {
-        const logoRes = await fetch('https://adnadventures.com/logo/logo.jpeg');
+        const logoRes = await fetch('https://adnadventures.com/adn%20logo.png');
         if (logoRes.ok) {
           const blob = await logoRes.blob();
           const base64 = await new Promise<string>((res) => {
@@ -1051,9 +1051,9 @@ Important Notes
                 <div className="border-b-2 border-slate-900 pb-4">
                   <div className="flex items-center gap-6">
                     {/* Logo */}
-                    <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-xl">
+                    <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center rounded-xl">
                       <img
-                        src="https://adnadventures.com/logo/logo.jpeg"
+                        src="https://adnadventures.com/adn%20logo.png"
                         alt="ADN Adventures Logo"
                         className="w-full h-full object-contain rounded-xl"
                         onError={(e) => {
@@ -1213,7 +1213,7 @@ Important Notes
                 </div>
 
                 {/* Payment Summary */}
-                <div className="space-y-2 border-b border-slate-300 pb-4">
+                {/* <div className="space-y-2 border-b border-slate-300 pb-4">
                   <h3 className="font-bold text-slate-900">Payment Summary</h3>
                   <table className="w-full text-sm border-collapse">
                     <tbody>
@@ -1261,7 +1261,7 @@ Important Notes
                       </tr>
                     </tbody>
                   </table>
-                </div>
+                </div> */}
 
                 {/* Terms & Conditions */}
                 {formData.termsConditions && (
